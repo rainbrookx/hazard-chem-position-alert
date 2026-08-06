@@ -33,4 +33,6 @@ go.work.sum
 
 # by rain
 docs/
+test/
+data/
 *.code-workspace

@@ -1,0 +1,13 @@
+# 数据库
+database:
+  default: "sqlite"  # 默认使用 SQLite
+  sqlite:
+    dsn: "./data/app.db"
+
+# gRPC
+
+# HTTP
+
+# MQTT
+mochi_mqtt:
+  address: ":1883"
