@@ -3,9 +3,10 @@ package mqtt
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	mqtt "github.com/mochi-mqtt/server/v2"
@@ -17,8 +18,10 @@ import (
 
 // Server 封装 MQTT Broker
 type Server struct {
-	server *mqtt.Server
-	cfg    config.MochiMQTTConfig
+	server    *mqtt.Server
+	cfg       config.MochiMQTTConfig
+	errCh     chan error
+	closeOnce sync.Once // 保证 Close 只执行一次
 }
 
 // New 创建 MQTT 服务实例（不启动）
@@ -29,12 +32,27 @@ func New(cfg config.MochiMQTTConfig) *Server {
 	return &Server{
 		server: s,
 		cfg:    cfg,
+		errCh:  make(chan error, 1),
 	}
 }
 
+// Close 安全关闭 MQTT 服务器（幂等）
+func (s *Server) Close() {
+	s.closeOnce.Do(func() {
+		if s.server != nil {
+			if err := s.server.Close(); err != nil {
+				slog.Error("退出 MQTT 错误", err)
+			}
+		}
+	})
+}
+
 // Run 启动 MQTT Broker 并阻塞，直到收到 SIGINT/SIGTERM 信号或发生致命错误。
-// Run 启动 MQTT Broker 并阻塞，直到收到 SIGINT/SIGTERM 信号。
+// 无论以何种方式退出（包括错误返回），都会通过 defer 调用 Close 释放资源。
 func (s *Server) Run() error {
+	defer s.Close() // 保证所有退出路径都会关闭资源
+
+	// 添加认证钩子
 	if err := s.server.AddHook(new(auth.AllowHook), nil); err != nil {
 		return fmt.Errorf("添加认证钩子失败: %w", err)
 	}
@@ -45,38 +63,50 @@ func (s *Server) Run() error {
 		return fmt.Errorf("添加 TCP 监听器失败: %w", err)
 	}
 
-	// 设置订阅（可扩展）
+	// 设置默认订阅
 	if err := s.setupSubscriptions(); err != nil {
 		return fmt.Errorf("订阅主题失败: %w", err)
 	}
 
-	// 启动broker，Serve启动完成立刻返回nil，不阻塞
-	err := s.server.Serve()
-	if err != nil {
-		return fmt.Errorf("mochi mqtt serve启动失败: %w", err)
-	}
-	log.Println("MQTT Broker 已启动完成")
+	// 在独立 goroutine 中启动 Broker，捕获启动错误和运行时 panic
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				s.errCh <- fmt.Errorf("MQTT Broker 运行时 panic: %v", r)
+			}
+		}()
+		// Serve() 方法在成功启动后立即返回 nil（非阻塞），
+		// 若启动失败（如端口占用）则立即返回错误。
+		if err := s.server.Serve(); err != nil {
+			s.errCh <- fmt.Errorf("MQTT Broker Serve 错误: %w", err)
+		}
+	}()
 
-	// 自己阻塞等待关闭信号
+	slog.Info("MQTT Broker 已启动完成")
+
+	// 设置系统信号监听
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	// 等待退出信号
-	sig := <-sigCh
-	log.Printf("收到信号 %v，正在关闭 MQTT Broker...", sig)
-
-	// 优雅关闭broker
-	if err := s.server.Close(); err != nil {
-		log.Printf("关闭 MQTT 服务器时发生错误: %v", err)
+	// 阻塞等待：信号 或 运行时错误
+	select {
+	case sig := <-sigCh:
+		slog.Info("收到信号，正在关闭 MQTT Broker", "signal", sig)
+	case err := <-s.errCh:
+		slog.Error("MQTT Broker 运行时错误", "error", err)
+		// 错误发生后，defer 中的 Close 会执行清理
 	}
 
-	log.Println("MQTT Broker 已安全关闭")
+	// 注意：不再显式调用 s.server.Close()，由 defer 完成
 	return nil
 }
 
-// setupSubscriptions 可在此注册默认订阅逻辑
+// setupSubscriptions 注册默认订阅逻辑（可扩展）
 func (s *Server) setupSubscriptions() error {
-	// 示例：订阅通配主题
-	_ = s.server.Subscribe("test", 0, handler.CallbackFn)
+	// 示例订阅，可继续添加
+	if err := s.server.Subscribe("test", 0, handler.CallbackFn); err != nil {
+		return err
+	}
+	// 可增加更多订阅...
 	return nil
 }

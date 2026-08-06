@@ -1,21 +1,27 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/rainbrookx/hazard-chem-position-alert/internal/infrastructure/config"
 	"github.com/rainbrookx/hazard-chem-position-alert/internal/server/mqtt"
 )
 
 func main() {
-	cfg, _ := config.Load("") // 加载配置
+	cfg := func() *config.Config {
+		cfg, err := config.Load("")
+		if err != nil {
+			slog.Error("加载配置错误", err)
+		}
+		return cfg
+	}()
 
-	log.Println("cfg.MochiMQTT.Address:", cfg.MochiMQTT.Address)
+	mqttServer := mqtt.New(cfg.MochiMQTT)
+	defer func(mqttServer *mqtt.Server) {
+		mqttServer.Close()
+	}(mqttServer) // 确保最终关闭资源（双重保障）
 
-	srv := mqtt.New(cfg.MochiMQTT)
-
-	// 启动并阻塞，直到收到 Ctrl+C 或发生错误
-	if err := srv.Run(); err != nil {
-		log.Fatalf("MQTT 服务异常退出: %v", err)
+	if err := mqttServer.Run(); err != nil {
+		slog.Error("MQTT 服务异常退出", err)
 	}
 }
