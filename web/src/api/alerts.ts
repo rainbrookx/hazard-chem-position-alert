@@ -2,28 +2,11 @@
  * 告警查询 API 封装。
  */
 import { authHeader } from './auth'
+import type { AlertRecord, AlertQuery } from '@/types'
 
 const API_BASE = '/api'
 
-export interface AlertRecord {
-  alert_id: string
-  alert_type: number
-  severity: number
-  trigger_time_ms: number
-  person_ids: string[]
-  zone_id: string
-  description: string
-  created_at_ms: number
-}
-
-export interface AlertQuery {
-  types?: string[]
-  start_time_ms?: number
-  end_time_ms?: number
-  zone_id?: string
-  limit?: number
-  offset?: number
-}
+export type { AlertRecord, AlertQuery }
 
 export async function fetchActiveAlerts(types?: string[]): Promise<AlertRecord[]> {
   const params = new URLSearchParams()

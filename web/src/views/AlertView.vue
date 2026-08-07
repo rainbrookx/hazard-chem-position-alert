@@ -67,6 +67,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAlertsStore } from '@/stores/alerts'
 import AlertBadge from '@/components/AlertBadge.vue'
+import type { AlertQuery } from '@/types'
 
 const store = useAlertsStore()
 const loading = ref(false)
@@ -124,7 +125,7 @@ function severityTag(sev: number): string {
 async function loadHistory() {
   loading.value = true
   try {
-    const query: any = { limit: pageSize, offset: (currentPage.value - 1) * pageSize }
+    const query: AlertQuery = { limit: pageSize, offset: (currentPage.value - 1) * pageSize }
     if (typeFilter.value !== null) query.types = [String(typeFilter.value)]
     if (timeRange.value) {
       query.start_time_ms = timeRange.value[0].getTime()

@@ -92,8 +92,8 @@ async function handleLogin() {
   try {
     await auth.login(form.username, form.password)
     router.push('/terminals')
-  } catch (e: any) {
-    error.value = e.message || '登录失败'
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : '登录失败'
   } finally {
     loading.value = false
   }

@@ -89,25 +89,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import FenceMap from '@/components/FenceMap.vue'
 import { authHeader } from '@/api/auth'
-
-interface Point { x: number; y: number }
-interface FenceInfo {
-  zone_id: string
-  name: string
-  type: number
-  source: number
-  vertices: Point[]
-  max_people: number
-  min_people: number
-  max_stay_seconds: number
-  stationary_seconds: number
-  stationary_threshold_meters: number
-  stationary_recovery_seconds: number
-  required_person_ids: string[]
-  grid_cell_meters: number
-  is_active: boolean
-  version: number
-}
+import type { Point, FenceInfo } from '@/types'
 
 const fences = ref<FenceInfo[]>([])
 const selectedId = ref<string | null>(null)

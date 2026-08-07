@@ -50,19 +50,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-
-interface Point {
-  x: number
-  y: number
-}
-interface FenceInfo {
-  zone_id: string
-  name: string
-  type: number
-  vertices: Point[]
-  is_active: boolean
-}
+import { ref } from 'vue'
+import type { Point, FenceInfo } from '@/types'
 
 const props = defineProps<{
   fences: FenceInfo[]
