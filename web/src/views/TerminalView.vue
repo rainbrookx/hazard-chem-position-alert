@@ -1,12 +1,8 @@
 <template>
-  <div class="terminal-view">
-    <div class="toolbar">
+  <div>
+    <div>
       <el-switch v-model="autoRefresh" active-text="实时刷新" />
-      <el-select
-        v-model="refreshInterval"
-        :disabled="!autoRefresh"
-        style="width: 140px; margin-left: 12px"
-      >
+      <el-select v-model="refreshInterval" :disabled="!autoRefresh">
         <el-option label="1 秒" :value="1000" />
         <el-option label="5 秒" :value="5000" />
         <el-option label="10 秒" :value="10000" />
@@ -14,27 +10,23 @@
         <el-option label="60 秒" :value="60000" />
         <el-option label="暂停" :value="0" />
       </el-select>
-      <span class="terminal-count">共 {{ terminals.length }} 台终端</span>
+      <el-text>共 {{ terminals.length }} 台终端</el-text>
     </div>
 
-    <el-table :data="terminals" stripe v-loading="loading" class="data-table">
+    <el-table :data="terminals" stripe v-loading="loading">
       <el-table-column prop="terminal_id" label="终端ID" width="140">
         <template #default="{ row }">
-          <span>{{ row.terminal_id }}</span>
+          <el-text>{{ row.terminal_id }}</el-text>
         </template>
       </el-table-column>
       <el-table-column prop="person_id" label="绑定对象" width="140">
         <template #default="{ row }">
-          <span>{{ row.person_id }}</span>
+          <el-text>{{ row.person_id }}</el-text>
         </template>
       </el-table-column>
       <el-table-column prop="battery" label="电量" width="120">
         <template #default="{ row }">
-          <el-progress
-            :percentage="row.battery"
-            :stroke-width="8"
-            :color="batteryColor(row.battery)"
-          />
+          <el-progress :percentage="row.battery" :stroke-width="8" :color="batteryColor(row.battery)" />
         </template>
       </el-table-column>
       <el-table-column prop="online" label="在线状态" width="100">
@@ -46,11 +38,9 @@
       </el-table-column>
       <el-table-column label="当前位置 (X, Y)" width="180">
         <template #default="{ row }">
-          <div class="coord-cell">
-            <span class="coord-current">{{ row.x.toFixed(1) }}, {{ row.y.toFixed(1) }}</span>
-            <span v-if="row.last_x || row.last_y" class="coord-last"
-              >{{ row.last_x.toFixed(1) }}, {{ row.last_y.toFixed(1) }}</span
-            >
+          <div>
+            <el-text>{{ row.x.toFixed(1) }}, {{ row.y.toFixed(1) }}</el-text>
+            <el-text v-if="row.last_x || row.last_y">{{ row.last_x.toFixed(1) }}, {{ row.last_y.toFixed(1) }}</el-text>
           </div>
         </template>
       </el-table-column>
@@ -105,41 +95,3 @@ onUnmounted(stopTimer)
 load()
 startTimer()
 </script>
-
-<style scoped>
-.terminal-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.toolbar {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  margin-bottom: 12px;
-}
-.terminal-count {
-  margin-left: auto;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-.data-table {
-  flex: 1;
-  width: 100%;
-}
-.coord-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.coord-current {
-  color: #67c23a;
-  font-family: monospace;
-}
-.coord-last {
-  color: #909399;
-  font-family: monospace;
-  font-size: 12px;
-}
-</style>

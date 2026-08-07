@@ -1,19 +1,12 @@
 <template>
-  <div class="fence-view">
-    <el-row :gutter="16" class="fence-row">
-      <el-col :span="8" class="fence-left-col">
-        <div class="fence-list-panel">
-          <div class="panel-toolbar">
+  <div>
+    <el-row :gutter="16">
+      <el-col :span="8">
+        <div>
+          <div>
             <el-button type="primary" size="small" @click="showAddDialog">新增围栏</el-button>
           </div>
-          <el-table
-            :data="fences"
-            stripe
-            size="small"
-            class="data-table"
-            @row-click="selectFence"
-            highlight-current-row
-          >
+          <el-table :data="fences" stripe size="small" @row-click="selectFence" highlight-current-row>
             <el-table-column prop="name" label="名称" min-width="100" />
             <el-table-column prop="type" label="类型" width="80">
               <template #default="{ row }">
@@ -22,19 +15,13 @@
             </el-table-column>
             <el-table-column prop="is_active" label="启用" width="60">
               <template #default="{ row }">
-                <span :style="{ color: row.is_active ? '#67C23A' : '#F56C6C' }">{{
-                  row.is_active ? '是' : '否'
-                }}</span>
+                <el-text>{{ row.is_active ? '是' : '否' }}</el-text>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="100">
               <template #default="{ row }">
-                <el-button size="small" text type="primary" @click.stop="editFence(row)"
-                  >编辑</el-button
-                >
-                <el-button size="small" text type="danger" @click.stop="deleteFence(row.zone_id)"
-                  >删除</el-button
-                >
+                <el-button size="small" text type="primary" @click.stop="editFence(row)">编辑</el-button>
+                <el-button size="small" text type="danger" @click.stop="deleteFence(row.zone_id)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -50,12 +37,7 @@
       </el-col>
     </el-row>
 
-    <!-- 围栏编辑对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="editingFence ? '编辑围栏' : '新增围栏'"
-      width="500px"
-    >
+    <el-dialog v-model="dialogVisible" :title="editingFence ? '编辑围栏' : '新增围栏'" width="500px">
       <el-form :model="form" label-width="120px">
         <el-form-item label="围栏名称">
           <el-input v-model="form.name" />
@@ -80,12 +62,7 @@
           <el-input-number v-model="form.stationary_seconds" :min="0" />
         </el-form-item>
         <el-form-item label="静止位移阈值(米)">
-          <el-input-number
-            v-model="form.stationary_threshold_meters"
-            :min="0"
-            :precision="2"
-            :step="0.5"
-          />
+          <el-input-number v-model="form.stationary_threshold_meters" :min="0" :precision="2" :step="0.5" />
         </el-form-item>
         <el-form-item label="静止恢复去抖(秒)">
           <el-input-number v-model="form.stationary_recovery_seconds" :min="0" />
@@ -113,10 +90,7 @@ import { ref, reactive, onMounted } from 'vue'
 import FenceMap from '@/components/FenceMap.vue'
 import { authHeader } from '@/api/auth'
 
-interface Point {
-  x: number
-  y: number
-}
+interface Point { x: number; y: number }
 interface FenceInfo {
   zone_id: string
   name: string
@@ -162,27 +136,19 @@ const form = reactive({
 
 function typeTag(type: number): string {
   switch (type) {
-    case 1:
-      return 'danger'
-    case 2:
-      return 'warning'
-    case 3:
-      return 'success'
-    default:
-      return 'info'
+    case 1: return 'danger'
+    case 2: return 'warning'
+    case 3: return 'success'
+    default: return 'info'
   }
 }
 
 function typeLabel(type: number): string {
   switch (type) {
-    case 1:
-      return '禁止'
-    case 2:
-      return '受限'
-    case 3:
-      return '安全'
-    default:
-      return '未知'
+    case 1: return '禁止'
+    case 2: return '受限'
+    case 3: return '安全'
+    default: return '未知'
   }
 }
 
@@ -194,12 +160,8 @@ async function loadFences() {
   }
 }
 
-function selectFence(row: FenceInfo) {
-  selectedId.value = row.zone_id
-}
-function selectFenceById(id: string) {
-  selectedId.value = id
-}
+function selectFence(row: FenceInfo) { selectedId.value = row.zone_id }
+function selectFenceById(id: string) { selectedId.value = id }
 
 function editFence(row: FenceInfo) {
   editingFence.value = row
@@ -223,17 +185,10 @@ function editFence(row: FenceInfo) {
 function showAddDialog() {
   editingFence.value = null
   Object.assign(form, {
-    name: '',
-    type: 1,
-    max_people: 0,
-    min_people: 0,
-    max_stay_seconds: 0,
-    stationary_seconds: 0,
-    stationary_threshold_meters: 2.0,
-    stationary_recovery_seconds: 3,
-    required_person_ids: '',
-    grid_cell_meters: 0,
-    is_active: true,
+    name: '', type: 1, max_people: 0, min_people: 0,
+    max_stay_seconds: 0, stationary_seconds: 0,
+    stationary_threshold_meters: 2.0, stationary_recovery_seconds: 3,
+    required_person_ids: '', grid_cell_meters: 0, is_active: true,
     vertices: [
       { x: 100, y: 100 },
       { x: 200, y: 100 },
@@ -249,10 +204,7 @@ async function saveFence() {
     ...form,
     zone_id: editingFence.value?.zone_id || `local-${Date.now()}`,
     required_person_ids: form.required_person_ids
-      ? form.required_person_ids
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter(Boolean)
+      ? form.required_person_ids.split(',').map((s: string) => s.trim()).filter(Boolean)
       : [],
   }
   const url = editingFence.value ? `/api/fences/${editingFence.value.zone_id}` : '/api/fences'
@@ -282,33 +234,3 @@ function handleVertexMove(fenceId: string, idx: number, x: number, y: number) {
 
 onMounted(loadFences)
 </script>
-
-<style scoped>
-.fence-view {
-  height: 100%;
-  overflow: hidden;
-}
-.fence-row {
-  height: 100%;
-}
-.fence-left-col {
-  height: 100%;
-}
-.fence-list-panel {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--el-border-color);
-  border-radius: 4px;
-  padding: 8px;
-  overflow: hidden;
-}
-.panel-toolbar {
-  flex-shrink: 0;
-  margin-bottom: 8px;
-}
-.data-table {
-  flex: 1;
-  width: 100%;
-}
-</style>

@@ -35,13 +35,11 @@ function handleLogout() {
 
 <style scoped>
 .app-container {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 }
 .app-header {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
   border-bottom: 1px solid var(--el-border-color-light);
   padding: 0 20px;
 }
@@ -51,11 +49,5 @@ function handleLogout() {
 }
 .logout-btn {
   margin-left: auto;
-}
-:deep(.el-main) {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 16px;
 }
 </style>

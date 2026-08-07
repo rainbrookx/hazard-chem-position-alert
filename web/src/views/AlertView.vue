@@ -1,7 +1,7 @@
 <template>
-  <div class="alert-view">
-    <div class="toolbar">
-      <el-select v-model="typeFilter" placeholder="告警类型" clearable style="width: 200px">
+  <div>
+    <div>
+      <el-select v-model="typeFilter" placeholder="告警类型" clearable>
         <el-option label="全部类型" :value="null" />
         <el-option label="越界报警" :value="1" />
         <el-option label="静止报警" :value="2" />
@@ -17,12 +17,11 @@
         range-separator="至"
         start-placeholder="开始时间"
         end-placeholder="结束时间"
-        style="margin-left: 12px; width: 360px"
       />
-      <span class="alert-count">共 {{ alerts.length }} 条记录</span>
+      <el-text>共 {{ alerts.length }} 条记录</el-text>
     </div>
 
-    <el-table :data="filteredAlerts" stripe v-loading="loading" class="data-table">
+    <el-table :data="filteredAlerts" stripe v-loading="loading">
       <el-table-column prop="trigger_time_ms" label="触发时间" width="180">
         <template #default="{ row }">
           {{ formatTime(row.trigger_time_ms) }}
@@ -37,9 +36,7 @@
       </el-table-column>
       <el-table-column label="等级" width="80">
         <template #default="{ row }">
-          <el-tag :type="severityTag(row.severity)" size="small">{{
-            severityLabel(row.severity)
-          }}</el-tag>
+          <el-tag :type="severityTag(row.severity)" size="small">{{ severityLabel(row.severity) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="person_ids" label="涉及人员" min-width="150">
@@ -61,7 +58,6 @@
       :page-size="pageSize"
       :total="total"
       layout="total, prev, pager, next"
-      class="pagination"
       @current-change="loadHistory"
     />
   </div>
@@ -96,48 +92,32 @@ function formatTime(ms: number): string {
 
 function alertTypeLabel(type: number): string {
   switch (type) {
-    case 1:
-      return '越界'
-    case 2:
-      return '静止'
-    case 3:
-      return '超员'
-    case 4:
-      return '缺员'
-    case 5:
-      return '滞留'
-    case 6:
-      return '一键'
-    case 7:
-      return '聚集'
-    default:
-      return '未知'
+    case 1: return '越界'
+    case 2: return '静止'
+    case 3: return '超员'
+    case 4: return '缺员'
+    case 5: return '滞留'
+    case 6: return '一键'
+    case 7: return '聚集'
+    default: return '未知'
   }
 }
 
 function severityLabel(sev: number): string {
   switch (sev) {
-    case 1:
-      return '黄'
-    case 2:
-      return '橙'
-    case 3:
-      return '红'
-    default:
-      return '-'
+    case 1: return '黄'
+    case 2: return '橙'
+    case 3: return '红'
+    default: return '-'
   }
 }
 
 function severityTag(sev: number): string {
   switch (sev) {
-    case 1:
-      return 'warning'
-    case 2:
-      return 'warning'
-    case 3:
-      return 'danger'
-    default:
-      return 'info'
+    case 1: return 'warning'
+    case 2: return 'warning'
+    case 3: return 'danger'
+    default: return 'info'
   }
 }
 
@@ -170,32 +150,3 @@ watch(timeRange, () => {
 
 onMounted(loadHistory)
 </script>
-
-<style scoped>
-.alert-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.toolbar {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  margin-bottom: 12px;
-}
-.alert-count {
-  margin-left: auto;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-.data-table {
-  flex: 1;
-  width: 100%;
-}
-.pagination {
-  flex-shrink: 0;
-  margin-top: 12px;
-  justify-content: flex-end;
-}
-</style>
