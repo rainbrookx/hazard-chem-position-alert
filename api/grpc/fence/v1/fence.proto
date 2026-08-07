@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package fence.v1;
+
+option go_package = "github.com/rainbrookx/hazard-chem-position-alert/api/grpc/fence/v1;fencev1";
+
+// FenceSource 围栏数据来源
+enum FenceSource {
+  SOURCE_UNSPECIFIED = 0;
+  SOURCE_EXTERNAL = 1;  // 第三方系统经 Data Preprocessor 同步
+  SOURCE_LOCAL = 2;     // 本项目 Web 页面本地新增/修改
+}
+
+// GeofenceType 围栏类型
+enum GeofenceType {
+  GEOFENCE_TYPE_UNSPECIFIED = 0;
+  GEOFENCE_TYPE_FORBIDDEN = 1;  // 禁止进入
+  GEOFENCE_TYPE_RESTRICTED = 2; // 受限区域（可进入但触发其他规则）
+  GEOFENCE_TYPE_SAFE = 3;       // 安全区域（用于缺员/超员判定基准）
+}
+
+// Point 二维坐标点
+message Point {
+  double x = 1;  // X 坐标（米）
+  double y = 2;  // Y 坐标（米）
+}
+
+// Geofence 电子围栏定义
+message Geofence {
+  string zone_id = 1;            // 围栏唯一 ID
+  string name = 2;               // 围栏名称（如"A 车间禁区"）
+  GeofenceType type = 3;         // 围栏类型
+  repeated Point vertices = 4;   // 多边形顶点（顺时针/逆时针均可，至少 3 个点）
+  int32 max_people = 5;          // 最大允许人数（0 = 不限制，用于超员判定）
+  int32 min_people = 6;          // 最少应有人数（0 = 不限制，用于缺员判定）
+  int32 max_stay_seconds = 7;    // 允许滞留时长（秒，0 = 不限制，用于滞留判定）
+  int32 stationary_seconds = 8;           // 静止判定时限（秒，0 = 不限制，用于静止判定）
+  double stationary_threshold_meters = 9;  // 静止位移阈值（米，0 = 使用默认值，用于静止判定）
+  int32 stationary_recovery_seconds = 10;  // 静止恢复去抖时长（秒，0 = 默认 3 秒）
+  repeated string required_person_ids = 11; // 必须在场的人员 ID（缺员判定）
+  int32 grid_cell_meters = 12;             // 该区域聚集判定网格大小（米，0 = 使用默认 30m）
+  bool is_active = 13;                     // 是否启用
+  FenceSource source = 14;                 // 围栏数据来源（外部同步 / 本地创建）
+}
+
+// FenceSyncService 围栏配置同步服务
+// 部署关系: Data Preprocessor 为 gRPC 服务端, Alert Engine 为 gRPC 客户端
+// Alert Engine 通过此服务从 Data Preprocessor 拉取 SOURCE_EXTERNAL 围栏
+service FenceSyncService {
+  // PullAllFences Alert Engine 启动/变更通知后调用，拉取全量外部围栏配置
+  rpc PullAllFences(PullAllFencesRequest) returns (PullAllFencesResponse);
+
+  // NotifyFenceChange Alert Engine 本地围栏变更后调用，通知 Data Preprocessor
+  rpc NotifyFenceChange(NotifyFenceChangeRequest) returns (NotifyFenceChangeResponse);
+}
+
+message PullAllFencesRequest {
+  string engine_id = 1;  // 引擎实例 ID
+}
+
+message PullAllFencesResponse {
+  repeated Geofence fences = 1;  // 全量围栏列表
+  int64 version = 2;             // 配置版本号（Unix 时间戳毫秒）
+}
+
+message NotifyFenceChangeRequest {
+  string engine_id = 1;       // 引擎实例 ID
+  int64 new_version = 2;      // 新配置版本号
+  string changed_zone_id = 3; // 变更的围栏 ID（可选）
+}
+
+message NotifyFenceChangeResponse {
+  bool acknowledged = 1;
+}

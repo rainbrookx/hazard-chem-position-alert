@@ -31,8 +31,24 @@ go.work.sum
 .idea/
 .vscode/
 
+# Frontend
+node_modules/
+dist/
+*.local
+
+# Temp files
+*.tmp
+*.swp
+*.log
+Thumbs.db
+.DS_Store
+
 # by rain
 docs/
 test/
 data/
 *.code-workspace
+.claude/
+.specify/
+CLAUDE.md
+/specs/

@@ -43,12 +43,27 @@ func setDefault(v *viper.Viper) {
 
 }
 
+// AlertEngineConfig 告警引擎配置。
+type AlertEngineConfig struct {
+	MQTTTopic             string `mapstructure:"mqtt_topic"`              // 默认 "position/cleaned"
+	DebounceSeconds       int    `mapstructure:"debounce_seconds"`        // 进入去抖窗口（秒），默认 3
+	GridCellMeters        int    `mapstructure:"grid_cell_meters"`        // 默认网格大小（米），默认 30
+	StateCleanupSeconds   int    `mapstructure:"state_cleanup_seconds"`   // 状态清理间隔（秒），默认 60
+	StateTTLSeconds       int    `mapstructure:"state_ttl_seconds"`       // 状态条目 TTL（秒），默认 300
+	JWTSecret             string `mapstructure:"jwt_secret"`              // JWT 签名密钥
+	DefaultUsername       string `mapstructure:"default_username"`        // 默认管理员用户名
+	DefaultPassword       string `mapstructure:"default_password"`        // 默认管理员密码
+	RSAKeyBits            int    `mapstructure:"rsa_key_bits"`            // RSA 密钥位数，默认 2048
+	OneKeyCooldownSeconds int    `mapstructure:"onekey_cooldown_seconds"` // 一键报警去重冷却（秒），默认 60
+}
+
 // Config 顶层配置结构体
 type Config struct {
-	Database   DatabaseConfig   `mapstructure:"database"`
-	MochiMQTT  MochiMQTTConfig  `mapstructure:"mochi_mqtt"`
-	HTTPServer HTTPServerConfig `mapstructure:"http_server"`
-	GRPCServer GRPCServerConfig `mapstructure:"grpc_server"`
+	Database    DatabaseConfig    `mapstructure:"database"`
+	MochiMQTT   MochiMQTTConfig   `mapstructure:"mochi_mqtt"`
+	HTTPServer  HTTPServerConfig  `mapstructure:"http_server"`
+	GRPCServer  GRPCServerConfig  `mapstructure:"grpc_server"`
+	AlertEngine AlertEngineConfig `mapstructure:"alert_engine"`
 }
 
 type DatabaseConfig struct {

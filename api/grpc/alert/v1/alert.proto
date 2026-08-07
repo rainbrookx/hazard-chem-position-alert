@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package alert.v1;
+
+option go_package = "github.com/rainbrookx/hazard-chem-position-alert/api/grpc/alert/v1;alertv1";
+
+// AlertType 告警类型枚举
+enum AlertType {
+  ALERT_TYPE_UNSPECIFIED = 0;
+  ALERT_TYPE_BOUNDARY = 1;      // 越界报警
+  ALERT_TYPE_STATIONARY = 2;    // 静止报警
+  ALERT_TYPE_OVERCROWDING = 3;  // 超员报警
+  ALERT_TYPE_UNDERSTAFFING = 4; // 缺员报警
+  ALERT_TYPE_LOITERING = 5;     // 滞留报警
+  ALERT_TYPE_ONEKEY = 6;        // 一键报警
+  ALERT_TYPE_GATHERING = 7;     // 人员聚集预警
+  ALERT_TYPE_SYSTEM = 8;        // 系统告警（配置缺失、内部错误等）
+}
+
+// Severity 严重级别
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_YELLOW = 1;  // 黄色预警（聚集 3 人）
+  SEVERITY_ORANGE = 2;  // 橙色预警（聚集 4-6 人）
+  SEVERITY_RED = 3;     // 红色预警（聚集 >6 人）/ 越界 / 一键报警等
+}
+
+// AlertEvent 告警事件消息（gRPC 推送 payload）
+message AlertEvent {
+  string alert_id = 1;          // ULID 唯一标识
+  AlertType alert_type = 2;     // 告警类型
+  Severity severity = 3;        // 严重级别
+  int64 trigger_time_ms = 4;    // 触发时间戳（毫秒 Unix epoch）
+  repeated string person_ids = 5; // 涉及人员 ID 列表
+  double x = 6;                 // X 坐标（米），一键报警可填触发终端坐标
+  double y = 7;                 // Y 坐标（米）
+  string zone_id = 8;           // 关联围栏/区域 ID（一键报警为空）
+  string rule_id = 9;           // 关联规则 ID
+  string description = 10;      // 人类可读描述（如"人员 A 越界进入 B 区"）
+}
+
+// AlertPushService 告警推送服务（Alert Engine → Data Preprocessor）
+service AlertPushService {
+  // SubscribeAlerts Data Preprocessor 调用此 RPC 建立告警推送流
+  // 返回 server-streaming，引擎持续推送告警事件
+  rpc SubscribeAlerts(SubscribeRequest) returns (stream AlertEvent);
+}
+
+message SubscribeRequest {
+  string client_id = 1;  // 订阅客户端标识（Data Preprocessor 实例 ID）
+}

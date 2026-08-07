@@ -40,6 +40,11 @@ func (s *Server) GRPCServer() *grpc.Server {
 	return s.server
 }
 
+// RegisterService 通用服务注册方法。
+func (s *Server) RegisterService(desc *grpc.ServiceDesc, impl any) {
+	s.server.RegisterService(desc, impl)
+}
+
 // ErrCh 返回运行时错误通道，供调用方监听
 func (s *Server) ErrCh() <-chan error {
 	return s.errCh

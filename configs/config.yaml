@@ -15,3 +15,16 @@ http_server:
 # MQTT（设备接入网关）
 mochi_mqtt:
   address: ":1883"
+
+# 告警引擎配置
+alert_engine:
+  mqtt_topic: "position/cleaned"
+  debounce_seconds: 3          # 进入去抖窗口（秒）
+  grid_cell_meters: 30         # 默认网格大小（米）
+  state_cleanup_seconds: 60    # 状态清理间隔（秒）
+  state_ttl_seconds: 300       # 状态条目 TTL（秒）
+  jwt_secret: ""               # JWT 签名密钥（生产环境务必修改）
+  default_username: "admin"    # 默认管理员用户名
+  default_password: "admin123" # 默认管理员密码（生产环境务必修改）
+  rsa_key_bits: 2048           # RSA 密钥位数
+  onekey_cooldown_seconds: 60  # 一键报警去重冷却（秒），冷却后可再次触发

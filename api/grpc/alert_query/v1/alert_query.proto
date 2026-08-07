@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package alert_query.v1;
+
+option go_package = "github.com/rainbrookx/hazard-chem-position-alert/api/grpc/alert_query/v1;alertqueryv1";
+
+import "contracts/alert.proto";
+
+// AlertQuery 告警查询过滤条件
+message AlertQuery {
+  repeated alert.v1.AlertType types = 1; // 告警类型筛选（空 = 全部）
+  int64 start_time_ms = 2;               // 开始时间（毫秒 Unix epoch，含）
+  int64 end_time_ms = 3;                 // 结束时间（毫秒 Unix epoch，含）
+  string zone_id = 4;                    // 区域筛选（空 = 全部）
+  int32 limit = 5;                       // 返回条数上限（默认 100，最大 1000）
+  int32 offset = 6;                      // 分页偏移
+}
+
+// AlertRecord 告警记录（查询结果）
+message AlertRecord {
+  alert.v1.AlertEvent event = 1;   // 告警事件详情
+  int64 created_at_ms = 2;         // 记录创建时间戳
+}
+
+// ActiveAlert 活跃告警摘要（未消警，引擎基于最新位置判定仍在触发态）
+message ActiveAlert {
+  string alert_id = 1;
+  alert.v1.AlertType alert_type = 2;
+  alert.v1.Severity severity = 3;
+  int64 trigger_time_ms = 4;
+  repeated string person_ids = 5;
+  string zone_id = 6;
+  string description = 7;
+}
+
+// AlertQueryService 告警查询服务（Web UI → Alert Engine）
+service AlertQueryService {
+  // QueryHistory 查询历史告警记录
+  rpc QueryHistory(AlertQuery) returns (QueryHistoryResponse);
+
+  // ListActive 查询当前活跃告警（引擎判定仍在触发态的告警）
+  rpc ListActive(ListActiveRequest) returns (ListActiveResponse);
+}
+
+message QueryHistoryResponse {
+  repeated AlertRecord records = 1;
+  int32 total = 2;  // 匹配总数（用于分页）
+}
+
+message ListActiveRequest {
+  // 可选筛选
+  repeated alert.v1.AlertType types = 1; // 告警类型筛选（空 = 全部）
+}
+
+message ListActiveResponse {
+  repeated ActiveAlert alerts = 1;
+}

@@ -9,8 +9,9 @@ import (
 	mqtt "github.com/mochi-mqtt/server/v2"
 	"github.com/mochi-mqtt/server/v2/hooks/auth"
 	"github.com/mochi-mqtt/server/v2/listeners"
+	"github.com/mochi-mqtt/server/v2/packets"
+
 	"github.com/rainbrookx/hazard-chem-position-alert/internal/infrastructure/config"
-	"github.com/rainbrookx/hazard-chem-position-alert/internal/server/mqtt/handler"
 )
 
 // Server 封装 MQTT Broker
@@ -18,17 +19,21 @@ type Server struct {
 	server    *mqtt.Server
 	cfg       config.MochiMQTTConfig
 	errCh     chan error
-	closeOnce sync.Once // 保证 Close 只执行一次
+	closeOnce sync.Once
+
+	topic           string
+	positionHandler func(cl *mqtt.Client, sub packets.Subscription, pk packets.Packet)
 }
 
 // New 创建 MQTT 服务实例（不启动）
-func New(cfg config.MochiMQTTConfig) *Server {
+func New(cfg config.MochiMQTTConfig, topic string) *Server {
 	opts := &mqtt.Options{InlineClient: true}
 	s := mqtt.New(opts)
 
 	return &Server{
 		server: s,
 		cfg:    cfg,
+		topic:  topic,
 		errCh:  make(chan error, 1),
 	}
 }
@@ -51,25 +56,20 @@ func (s *Server) Close() {
 }
 
 // Start 初始化并启动 MQTT Broker（非阻塞）。
-// 返回启动阶段的错误（如端口占用）；运行时错误通过 ErrCh() 上报。
 func (s *Server) Start() error {
-	// 添加认证钩子
 	if err := s.server.AddHook(new(auth.AllowHook), nil); err != nil {
 		return fmt.Errorf("添加认证钩子失败: %w", err)
 	}
 
-	// 添加 TCP 监听器
 	tcp := listeners.NewTCP(listeners.Config{Address: s.cfg.Address})
 	if err := s.server.AddListener(tcp); err != nil {
 		return fmt.Errorf("添加 TCP 监听器失败: %w", err)
 	}
 
-	// 设置默认订阅
 	if err := s.setupSubscriptions(); err != nil {
 		return fmt.Errorf("订阅主题失败: %w", err)
 	}
 
-	// 在独立 goroutine 中启动 Broker，捕获启动错误和运行时 panic
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -85,10 +85,25 @@ func (s *Server) Start() error {
 	return nil
 }
 
-// setupSubscriptions 注册默认订阅逻辑（可扩展）
+// setupSubscriptions 订阅清洗定位数据 topic (QoS 0).
 func (s *Server) setupSubscriptions() error {
-	if err := s.server.Subscribe("test", 0, handler.CallbackFn); err != nil {
+	topic := s.topic
+	if topic == "" {
+		topic = "position/cleaned"
+	}
+
+	if err := s.server.Subscribe(topic, 0, func(cl *mqtt.Client, sub packets.Subscription, pk packets.Packet) {
+		if s.positionHandler != nil {
+			s.positionHandler(cl, sub, pk)
+		}
+	}); err != nil {
 		return err
 	}
+	slog.Info("MQTT 主题已订阅", "topic", topic)
 	return nil
+}
+
+// SetPositionHandler 设置定位数据处理回调。
+func (s *Server) SetPositionHandler(handler func(cl *mqtt.Client, sub packets.Subscription, pk packets.Packet)) {
+	s.positionHandler = handler
 }
