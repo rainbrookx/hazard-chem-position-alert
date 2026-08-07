@@ -4,10 +4,7 @@ package mqtt
 import (
 	"fmt"
 	"log/slog"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 
 	mqtt "github.com/mochi-mqtt/server/v2"
 	"github.com/mochi-mqtt/server/v2/hooks/auth"
@@ -36,22 +33,26 @@ func New(cfg config.MochiMQTTConfig) *Server {
 	}
 }
 
+// ErrCh 返回运行时错误通道，供调用方监听
+func (s *Server) ErrCh() <-chan error {
+	return s.errCh
+}
+
 // Close 安全关闭 MQTT 服务器（幂等）
 func (s *Server) Close() {
 	s.closeOnce.Do(func() {
 		if s.server != nil {
 			if err := s.server.Close(); err != nil {
-				slog.Error("退出 MQTT 错误", err)
+				slog.Error("退出 MQTT 错误", "error", err)
 			}
 		}
+		slog.Info("MQTT Broker 已关闭")
 	})
 }
 
-// Run 启动 MQTT Broker 并阻塞，直到收到 SIGINT/SIGTERM 信号或发生致命错误。
-// 无论以何种方式退出（包括错误返回），都会通过 defer 调用 Close 释放资源。
-func (s *Server) Run() error {
-	defer s.Close() // 保证所有退出路径都会关闭资源
-
+// Start 初始化并启动 MQTT Broker（非阻塞）。
+// 返回启动阶段的错误（如端口占用）；运行时错误通过 ErrCh() 上报。
+func (s *Server) Start() error {
 	// 添加认证钩子
 	if err := s.server.AddHook(new(auth.AllowHook), nil); err != nil {
 		return fmt.Errorf("添加认证钩子失败: %w", err)
@@ -75,38 +76,19 @@ func (s *Server) Run() error {
 				s.errCh <- fmt.Errorf("MQTT Broker 运行时 panic: %v", r)
 			}
 		}()
-		// Serve() 方法在成功启动后立即返回 nil（非阻塞），
-		// 若启动失败（如端口占用）则立即返回错误。
 		if err := s.server.Serve(); err != nil {
 			s.errCh <- fmt.Errorf("MQTT Broker Serve 错误: %w", err)
 		}
 	}()
 
-	slog.Info("MQTT Broker 已启动完成")
-
-	// 设置系统信号监听
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-	// 阻塞等待：信号 或 运行时错误
-	select {
-	case sig := <-sigCh:
-		slog.Info("收到信号，正在关闭 MQTT Broker", "signal", sig)
-	case err := <-s.errCh:
-		slog.Error("MQTT Broker 运行时错误", "error", err)
-		// 错误发生后，defer 中的 Close 会执行清理
-	}
-
-	// 注意：不再显式调用 s.server.Close()，由 defer 完成
+	slog.Info("MQTT Broker 已启动", "address", s.cfg.Address)
 	return nil
 }
 
 // setupSubscriptions 注册默认订阅逻辑（可扩展）
 func (s *Server) setupSubscriptions() error {
-	// 示例订阅，可继续添加
 	if err := s.server.Subscribe("test", 0, handler.CallbackFn); err != nil {
 		return err
 	}
-	// 可增加更多订阅...
 	return nil
 }

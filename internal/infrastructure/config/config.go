@@ -45,8 +45,10 @@ func setDefault(v *viper.Viper) {
 
 // Config 顶层配置结构体
 type Config struct {
-	Database  DatabaseConfig  `mapstructure:"database"`
-	MochiMQTT MochiMQTTConfig `mapstructure:"mochi_mqtt"`
+	Database   DatabaseConfig   `mapstructure:"database"`
+	MochiMQTT  MochiMQTTConfig  `mapstructure:"mochi_mqtt"`
+	HTTPServer HTTPServerConfig `mapstructure:"http_server"`
+	GRPCServer GRPCServerConfig `mapstructure:"grpc_server"`
 }
 
 type DatabaseConfig struct {
@@ -60,4 +62,12 @@ type SQLiteConfig struct {
 
 type MochiMQTTConfig struct {
 	Address string `mapstructure:"address"`
+}
+
+type HTTPServerConfig struct {
+	Port string `mapstructure:"port"`
+}
+
+type GRPCServerConfig struct {
+	Port string `mapstructure:"port"`
 }

@@ -4,10 +4,14 @@ database:
   sqlite:
     dsn: "./data/app.db"
 
-# gRPC
+# gRPC（供其他后端服务调用）
+grpc_server:
+  port: ":9090"
 
-# HTTP
+# HTTP（供 Web 前端调用）
+http_server:
+  port: ":8080"
 
-# MQTT
+# MQTT（设备接入网关）
 mochi_mqtt:
   address: ":1883"

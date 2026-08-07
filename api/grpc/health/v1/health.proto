@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package health.v1;
+
+option go_package = "github.com/rainbrookx/hazard-chem-position-alert/api/grpc/health/v1;healthv1";
+
+// Health 健康检查服务（技术验证用）
+service Health {
+  // Check 检查服务状态
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message HealthCheckRequest {
+  // 可选：调用方标识
+  string caller = 1;
+}
+
+message HealthCheckResponse {
+  // 服务状态：SERVING / NOT_SERVING
+  string status = 1;
+  // 服务名称
+  string service = 2;
+}
